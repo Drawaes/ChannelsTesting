@@ -16,20 +16,20 @@ namespace BytesBeingWrittenUnchanged
         static byte data3 = 0xFF;
         static ushort data4 = 0xFFFF;
         static byte empty = 0x0000;
-        //static SocketListener server;
+        static SocketListener server;
         static IPEndPoint address = new IPEndPoint(IPAddress.Loopback, 7777);
         static int totalMessages = 50000;
         static SocketConnection client;
         static UvThread _thread = new UvThread();
-        static UvTcpListener server;
+        //static UvTcpListener server;
 
         public static void Main(string[] args)
         {
-            //server = new SocketListener();
-            server = new UvTcpListener(_thread,address);
+            server = new SocketListener();
+            //server = new UvTcpListener(_thread,address);
             server.OnConnection(Server);
-            server.Start();
-            //server.Start(address);
+            //server.Start();
+            server.Start(address);
 
             client = SocketConnection.ConnectAsync(address).Result;
             
@@ -50,37 +50,47 @@ namespace BytesBeingWrittenUnchanged
                 buff.Ensure(8);
                 buff.Memory.Write(data2);
                 buff.CommitBytes(8);
-
-                var reader = buff.AsReadableBuffer();
-                reader = reader.Slice(0,2);
-                if(!reader.IsSingleSpan)
-                    throw new InvalidOperationException();
-                if(reader.Length != 2)
-                    throw new InvalidOperationException();
-
-                reader.FirstSpan.Write(data4);
+                               
                 await buff.FlushAsync();
             }
+            var buff2 = channel.Output.Alloc(100);
+            buff2.Ensure(2);
+            buff2.Memory.Write(empty);
+            buff2.CommitBytes(2);
+
+            buff2.Ensure(8);
+            buff2.Memory.Write(data2);
+            buff2.CommitBytes(8);
+            Console.ReadLine();
         }
 
         static async Task ClientQueue(IChannel channel)
         {
             var mcount = 0;
-            while(mcount < totalMessages)
+
+            while(true)
             {
                 var buff = await channel.Input.ReadAsync();
                 while(buff.Length >= 10)
                 {
                     var b = buff.FirstSpan.Read<byte>();
-                    if(b != 0xFF)
-                        throw new NotImplementedException();
+                    //if(b != 0xFF)
+                    //    throw new NotImplementedException();
                     buff = buff.Slice(10);
-                    mcount ++;
+                    mcount += 10;
                 }
+                Console.WriteLine("Read " + mcount);
                 buff.Consumed(buff.Start,buff.End);
-
+                if(mcount == (10 * totalMessages))
+                {
+                    Console.WriteLine("Read all bytes!");
+                }
+                if(mcount > (10 * totalMessages))
+                {
+                    Console.WriteLine("read too many " + mcount);
+                }
             }
-            Console.WriteLine("No Problem!");
+            
         }
     }
 }
