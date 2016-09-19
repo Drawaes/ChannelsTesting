@@ -18,7 +18,7 @@ namespace BytesBeingWrittenUnchanged
         static byte empty = 0x0000;
         static SocketListener server;
         static IPEndPoint address = new IPEndPoint(IPAddress.Loopback, 7777);
-        static int totalMessages = 50000;
+        static int totalMessages = 1;
         static SocketConnection client;
         static UvThread _thread = new UvThread();
         //static UvTcpListener server;
